@@ -248,7 +248,7 @@ public class SpatialAnchorsManager : Singleton<SpatialAnchorsManager>
             Timeout = 0,
             Location = OVRPlugin.SpatialEntityStorageLocation.Local,
             ActionType = OVRPlugin.SpatialEntityQueryActionType.Load,
-            FilterType = OVRPlugin.SpatialEntityQueryFilterType.Ids
+            FilterType = OVRPlugin.SpatialEntityQueryFilterType.None
         };
 
         // Query local Spatial Anchors (handles)
