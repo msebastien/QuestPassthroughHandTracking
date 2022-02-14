@@ -102,6 +102,16 @@ public class SpatialAnchorsManager : Singleton<SpatialAnchorsManager>
         OVRPlugin.SpatialEntityUuid uuid, OVRPlugin.SpatialEntityStorageLocation location)
     {
         Logger.Instance.LogInfo($"SpatialEntityStorageErase requestId: {requestId} result: {result} uuid: {GetUuidString(uuid)} location: {location}");
+        
+        int playerNumAnchorUuids = PlayerPrefs.GetInt("numAnchorUuids");
+        string strUuid = GetUuidString(uuid);
+        for (int i = 0; i < playerNumAnchorUuids; i++)
+        {
+            if(PlayerPrefs.GetString("anchorUuid" + i) == strUuid)
+            {
+                PlayerPrefs.DeleteKey("anchorUuid" + i);
+            }
+        }
     }
 
     private void OVRManager_SpatialEntitySetComponentEnabled(ulong requestId, bool result, 
