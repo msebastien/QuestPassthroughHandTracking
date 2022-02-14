@@ -69,7 +69,7 @@ public class SpatialAnchorsManager : Singleton<SpatialAnchorsManager>
     private void OVRManager_SpatialAnchorSaved(ulong requestId, ulong anchorHandle, bool result, 
         OVRPlugin.SpatialEntityUuid uuid)
     {
-        Logger.Instance.LogInfo($"SpatialAnchorSaved requestId: {requestId} space: {space} result: {result} uuid: {GetUuidString(uuid)}");
+        Logger.Instance.LogInfo($"SpatialAnchorSaved requestId: {requestId} handle: {anchorHandle} result: {result} uuid: {GetUuidString(uuid)}");
         /*
         // Write UUID of saved anchor to "player preferences" file
         if (!PlayerPrefs.HasKey("numAnchorUuids"))
@@ -122,8 +122,6 @@ public class SpatialAnchorsManager : Singleton<SpatialAnchorsManager>
         // We assume there is only one prefab
         GameObject anchorObject = Instantiate(anchorPrefab);
         anchorObject.GetComponentInChildren<TextMeshProUGUI>().text = $"{anchorHandle}";
-        Anchor anchor = anchorObject.GetComponent<Anchor>();
-        anchor.SetAnchorHandle(anchorHandle);
 
         // Add GameObject to dictionary so it can be tracked
         resolvedAnchors.Add(anchorHandle, anchorObject);

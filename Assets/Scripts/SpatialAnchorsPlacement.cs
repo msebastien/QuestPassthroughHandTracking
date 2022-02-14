@@ -78,8 +78,6 @@ public class SpatialAnchorsPlacement : MonoBehaviour
             // create a new anchor on the current session
             GameObject newAnchor = Instantiate(SpatialAnchorsManager.Instance.anchorPrefab);
             newAnchor.GetComponentInChildren<TextMeshProUGUI>().text = $"{anchorHandle}";
-            Anchor anchor = newAnchor.GetComponent<Anchor>();
-            anchor.SetAnchorHandle(anchorHandle);
 
             SpatialAnchorsManager.Instance.resolvedAnchors.Add(anchorHandle, newAnchor);
 
