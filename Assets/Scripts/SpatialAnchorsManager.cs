@@ -11,10 +11,10 @@ using UnityEngine;
 public class SpatialAnchorsManager : Singleton<SpatialAnchorsManager>
 {
     [SerializeField]
-    private GameObject anchorPrefab;
+    public GameObject anchorPrefab;
 
     // Unassigned Anchor Handle default value
-    private ulong invalidAnchorHandle = ulong.MaxValue;
+    public ulong invalidAnchorHandle = ulong.MaxValue;
 
     // Query
     // RequestID (Key) --> Spatial Anchor handle (Value)
@@ -69,8 +69,10 @@ public class SpatialAnchorsManager : Singleton<SpatialAnchorsManager>
     private void OVRManager_SpatialAnchorSaved(ulong requestId, ulong anchorHandle, bool result, 
         OVRPlugin.SpatialEntityUuid uuid)
     {
+        Logger.Instance.LogInfo($"SpatialAnchorSaved requestId: {requestId} space: {space} result: {result} uuid: {GetUuidString(uuid)}");
+        /*
         // Write UUID of saved anchor to "player preferences" file
-        if(!PlayerPrefs.HasKey("numAnchorUuids"))
+        if (!PlayerPrefs.HasKey("numAnchorUuids"))
         {
             PlayerPrefs.SetInt("numAnchorUuids", 0);
         }
@@ -79,7 +81,7 @@ public class SpatialAnchorsManager : Singleton<SpatialAnchorsManager>
         int playerNumAnchorUuids = PlayerPrefs.GetInt("numAnchorUuids");
 
         PlayerPrefs.SetString("anchorUuid" + playerNumAnchorUuids, GetUuidString(uuid));
-        PlayerPrefs.SetInt("numAnchorUuids", ++playerNumAnchorUuids);
+        PlayerPrefs.SetInt("numAnchorUuids", ++playerNumAnchorUuids);*/
     }
 
     private void OVRManager_SpatialEntityQueryResults(ulong requestId, int numResults, 
@@ -307,6 +309,7 @@ public class SpatialAnchorsManager : Singleton<SpatialAnchorsManager>
             Logger.Instance.LogError($"SpatialEntityEraseSpatialEntity failed for anchorHandle: {anchorHandle}");
         }
     }
+    #endregion
 
     /// <summary>
     /// Try to enable a component (Locatable or Storable) of a spatial anchor.
@@ -355,5 +358,5 @@ public class SpatialAnchorsManager : Singleton<SpatialAnchorsManager>
             }
         }
     }
-    #endregion
+    
 }
