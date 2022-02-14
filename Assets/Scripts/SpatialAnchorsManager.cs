@@ -1,6 +1,7 @@
 using MSebastien.Core.Singletons;
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 /// <summary>
@@ -52,7 +53,8 @@ public class SpatialAnchorsManager : Singleton<SpatialAnchorsManager>
 
             if(anchorHandle == invalidAnchorHandle)
             {
-                Logger.Instance.LogError("Error: AnchorHandle invalid in tracking loop!");
+                Logger.Instance.LogError("Trying to update anchor pos and rot threw an error " +
+                    $"for anchor handle {anchorHandle}");
                 return;
             }
 
@@ -83,53 +85,62 @@ public class SpatialAnchorsManager : Singleton<SpatialAnchorsManager>
     private void OVRManager_SpatialEntityQueryResults(ulong requestId, int numResults, 
         OVRPlugin.SpatialEntityQueryResult[] results)
     {
-        for(int i = 0; i < numResults; i++)
+        Logger.Instance.LogInfo($"SpatialEntityQueryResult requestId: {requestId} numResults: {numResults}");
+        foreach (var spatialQueryResult in results)
         {
-            var uuid = results[i].uuid;
-            var anchorHandle = results[i].space;
-
-            if(resolvedAnchors.TryGetValue(anchorHandle, out GameObject anchorObject))
-            {
-                Logger.Instance.LogInfo($"Restored Anchor " +
-                    $"(Handle:{anchorHandle}/UUID:{GetUuidString(uuid)}");
-
-                //Instantiate(anchorObject);
-            }
-            else
-            {
-                Logger.Instance.LogInfo($"Failed to restore Anchor " +
-                    $"(Handle:{anchorHandle}/UUID:{GetUuidString(uuid)}");
-            }
+            TryEnableComponent(spatialQueryResult.space, OVRPlugin.SpatialEntityComponentType.Locatable);
+            TryEnableComponent(spatialQueryResult.space, OVRPlugin.SpatialEntityComponentType.Storable);
         }
     }
 
     private void OVRManager_SpatialEntityQueryComplete(ulong requestId, bool result, int numFound)
     {
-        throw new NotImplementedException();
+        Logger.Instance.LogInfo($"SpatialEntityQueryComplete requestId: {requestId} result: {result} numFound: {numFound}");
     }
 
     private void OVRManager_SpatialEntityStorageErase(ulong requestId, bool result, 
         OVRPlugin.SpatialEntityUuid uuid, OVRPlugin.SpatialEntityStorageLocation location)
     {
-        throw new NotImplementedException();
+        Logger.Instance.LogInfo($"SpatialEntityStorageErase requestId: {requestId} result: {result} uuid: {GetUuidString(uuid)} location: {location}");
     }
 
     private void OVRManager_SpatialEntitySetComponentEnabled(ulong requestId, bool result, 
         OVRPlugin.SpatialEntityComponentType type, ulong anchorHandle)
     {
-        if(type == OVRPlugin.SpatialEntityComponentType.Locatable)
+        // If the Locatable was enabled and no gameobject created
+        if(locateAnchorRequest.ContainsKey(requestId) && !resolvedAnchors.ContainsKey(locateAnchorRequest[requestId]))
         {
-            // We assume there is only one prefab
-            GameObject anchorObject = Instantiate(anchorPrefab);
-            Anchor anchor = anchorObject.GetComponent<Anchor>();
-            anchor.SetAnchorHandle(anchorHandle);
-
-            // Add gameobject to dictionary so it can be tracked, toggle save
-            resolvedAnchors.Add(anchorHandle, anchor.gameObject);
+            CreateAnchorGameObject(locateAnchorRequest[requestId]);
         }
     }
     //-------------------- END ASYNCHRONOUS OPERATIONS ------------------------
 
+    private void CreateAnchorGameObject(ulong anchorHandle)
+    {
+        // We assume there is only one prefab
+        GameObject anchorObject = Instantiate(anchorPrefab);
+        anchorObject.GetComponentInChildren<TextMeshProUGUI>().text = $"{anchorHandle}";
+        Anchor anchor = anchorObject.GetComponent<Anchor>();
+        anchor.SetAnchorHandle(anchorHandle);
+
+        // Add GameObject to dictionary so it can be tracked
+        resolvedAnchors.Add(anchorHandle, anchorObject);
+    }
+
+    /// <summary>
+    /// Convert a Spatial Anchor UUID into a string
+    /// </summary>
+    /// <param name="uuid">Spatial Anchor UUID</param>
+    /// <returns>String representation of the UUID</returns>
+    private string GetUuidString(OVRPlugin.SpatialEntityUuid uuid)
+    {
+        byte[] uuidData = new byte[16];
+        Array.Copy(BitConverter.GetBytes(uuid.Value_0), uuidData, 8);
+        Array.Copy(BitConverter.GetBytes(uuid.Value_1), 0, uuidData, 8, 8);
+        return AnchorHelpers.UuidToString(uuidData);
+    }
+
+    #region CRUD Operations
     /// <summary>
     /// Create a spatial anchor (aka a persistant 6DOF tracked transform in world space)
     /// </summary>
@@ -183,7 +194,7 @@ public class SpatialAnchorsManager : Singleton<SpatialAnchorsManager>
         }
     }
 
-    public void QuerySavedSpatialAnchors()
+    public void QuerySavedPersistentSpatialAnchors()
     {
         // Get total number of saved anchor uuids
         if (!PlayerPrefs.HasKey("numAnchorUuids"))
@@ -263,6 +274,40 @@ public class SpatialAnchorsManager : Singleton<SpatialAnchorsManager>
         }
     }
 
+    public void DestroyAnchor(ulong anchorHandle)
+    {
+        // Destroy anchor gameobject
+        if(resolvedAnchors.ContainsKey(anchorHandle))
+        {
+            Destroy(resolvedAnchors[anchorHandle].gameObject);
+            resolvedAnchors.Remove(anchorHandle);
+        }
+
+        // Destroy in memory
+        if(!OVRPlugin.DestroySpace(ref anchorHandle))
+        {
+            Logger.Instance.LogError($"DestroySpace failed for anchorHandle: {anchorHandle}");
+        }
+    }
+
+    public void EraseAnchor(ulong anchorHandle)
+    {
+        // Destroy anchor gameobject
+        if(resolvedAnchors.ContainsKey(anchorHandle))
+        {
+            Destroy(resolvedAnchors[anchorHandle].gameObject);
+            resolvedAnchors.Remove(anchorHandle);
+        }
+
+        // Erase anchor from storage
+        ulong eraseRequestId = 0;
+        if(!OVRPlugin.SpatialEntityEraseSpatialEntity(ref anchorHandle, 
+            OVRPlugin.SpatialEntityStorageLocation.Local, ref eraseRequestId))
+        {
+            Logger.Instance.LogError($"SpatialEntityEraseSpatialEntity failed for anchorHandle: {anchorHandle}");
+        }
+    }
+
     /// <summary>
     /// Try to enable a component (Locatable or Storable) of a spatial anchor.
     /// </summary>
@@ -310,17 +355,5 @@ public class SpatialAnchorsManager : Singleton<SpatialAnchorsManager>
             }
         }
     }
-
-    /// <summary>
-    /// Convert a Spatial Anchor UUID into a string
-    /// </summary>
-    /// <param name="uuid">Spatial Anchor UUID</param>
-    /// <returns>String representation of the UUID</returns>
-    private string GetUuidString(OVRPlugin.SpatialEntityUuid uuid)
-    {
-        byte[] uuidData = new byte[16];
-        Array.Copy(BitConverter.GetBytes(uuid.Value_0), uuidData, 8);
-        Array.Copy(BitConverter.GetBytes(uuid.Value_1), 0, uuidData, 8, 8);
-        return AnchorHelpers.UuidToString(uuidData);
-    }
+    #endregion
 }
