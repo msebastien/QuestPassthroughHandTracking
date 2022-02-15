@@ -41,7 +41,7 @@ public class SpatialAnchorsPlacement : MonoBehaviour
             CreateAnchor();
         }
 
-        if(prevResolvedAnchorCount != SpatialAnchorsManager.Instance.resolvedAnchors.Count)
+        if (prevResolvedAnchorCount != SpatialAnchorsManager.Instance.resolvedAnchors.Count)
         {
             prevResolvedAnchorCount = SpatialAnchorsManager.Instance.resolvedAnchors.Count;
             AdditionalFeatures(prevResolvedAnchorCount > 0);
