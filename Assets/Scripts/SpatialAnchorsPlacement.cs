@@ -22,6 +22,12 @@ public class SpatialAnchorsPlacement : MonoBehaviour
     [SerializeField]
     private Button resolveAllAnchors;
 
+    /// <summary>
+    /// Can be used for creating anchors by pinching index finger
+    /// </summary>
+    [SerializeField]
+    private OVRHand hand = null;
+
     private Dictionary<ulong, GameObject> anchorsToBeSaved = new Dictionary<ulong, GameObject>();
 
     private int prevResolvedAnchorCount = 0;
@@ -37,6 +43,11 @@ public class SpatialAnchorsPlacement : MonoBehaviour
     private void Update()
     {
         if(OVRInput.GetDown(OVRInput.Button.SecondaryIndexTrigger))
+        {
+            CreateAnchor();
+        }
+
+        if(hand != null && hand.GetFingerIsPinching(OVRHand.HandFinger.Index))
         {
             CreateAnchor();
         }

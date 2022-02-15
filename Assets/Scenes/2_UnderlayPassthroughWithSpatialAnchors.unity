@@ -698,6 +698,7 @@ MonoBehaviour:
   eraseAllAnchorsFromMemory: {fileID: 1185237250678065724}
   saveAllAnchors: {fileID: 1185237250678065725}
   resolveAllAnchors: {fileID: 1185237250678065726}
+  hand: {fileID: 65284400}
 --- !u!1 &1839459693
 GameObject:
   m_ObjectHideFlags: 0
